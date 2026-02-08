@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tokenization & Embedding Visualization</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+const { useState, useEffect } = React;
+
+const TokenizationAndEmbeddingViz = () => {
+  const [activeTab, setActiveTab] = useState('tokenization');
+  const [selectedExample, setSelectedExample] = useState(0);
+  const [hoveredWord, setHoveredWord] = useState(null);
+  const [showConnections, setShowConnections] = useState(true);
+  const [animationFrame, setAnimationFrame] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setAnimationFrame(f => (f + 1) % 100);
+    }, 50);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Combined tokenization + embedding data for each example
+  const examples = [
+    {
+      id: 0,
+      text: "The capital of France is Paris",
+      tokens: ["The", " capital", " of", " France", " is", " Paris"],
+      ids: [464, 3139, 286, 4881, 318, 6342],
+      note: "Common words often get their own token",
+      // Words from the sentence (highlighted) + related words in embedding space
+      embeddingData: {
+        sentenceWords: [
+          { word: "capital", x: 350, y: 150, isFromSentence: true },
+          { word: "France", x: 420, y: 120, isFromSentence: true },
+          { word: "Paris", x: 380, y: 90, isFromSentence: true },
+          { word: "The", x: 150, y: 300, isFromSentence: true },
+          { word: "of", x: 180, y: 320, isFromSentence: true },
+          { word: "is", x: 200, y: 280, isFromSentence: true },
+        ],
+        relatedWords: [
+          // Near "capital" - other governance terms
+          { word: "city", x: 320, y: 180, cluster: "places" },
+          { word: "government", x: 380, y: 190, cluster: "governance" },
+          { word: "nation", x: 410, y: 170, cluster: "governance" },
+          // Near "France" - other countries
+          { word: "Germany", x: 480, y: 100, cluster: "countries" },
+          { word: "Italy", x: 450, y: 150, cluster: "countries" },
+          { word: "Spain", x: 390, y: 160, cluster: "countries" },
+          { word: "Europe", x: 440, y: 80, cluster: "countries" },
+          // Near "Paris" - other capitals
+          { word: "Berlin", x: 430, y: 60, cluster: "capitals" },
+          { word: "Rome", x: 400, y: 130, cluster: "capitals" },
+          { word: "London", x: 340, y: 70, cluster: "capitals" },
+          { word: "Madrid", x: 350, y: 110, cluster: "capitals" },
+          // Function words cluster
+          { word: "a", x: 160, y: 340, cluster: "function" },
+          { word: "an", x: 140, y: 360, cluster: "function" },
+          { word: "in", x: 220, y: 300, cluster: "function" },
+        ],
+        clusters: {
+          places: { color: "#f472b6", label: "Places" },
+          countries: { color: "#fb923c", label: "Countries" },
+          capitals: { color: "#c084fc", label: "Capital Cities" },
+          governance: { color: "#facc15", label: "Governance" },
+          function: { color: "#94a3b8", label: "Function Words" },
+        },
+        insight: "Notice how 'Paris', 'France', and 'capital' cluster together — they often appear in similar contexts. Meanwhile, function words like 'the', 'of', 'is' form their own distant cluster."
+      }
+    },
+    {
+      id: 1,
+      text: "Tokenization is fascinating",
+      tokens: ["Token", "ization", " is", " fascin", "ating"],
+      ids: [30642, 1634, 318, 25190, 803],
+      note: "Longer words get split into subword pieces",
+      embeddingData: {
+        sentenceWords: [
+          { word: "Token", x: 280, y: 120, isFromSentence: true },
+          { word: "ization", x: 320, y: 140, isFromSentence: true },
+          { word: "is", x: 400, y: 300, isFromSentence: true },
+          { word: "fascin", x: 180, y: 250, isFromSentence: true },
+          { word: "ating", x: 220, y: 270, isFromSentence: true },
+        ],
+        relatedWords: [
+          // Near tokenization - NLP terms
+          { word: "embedding", x: 250, y: 100, cluster: "nlp" },
+          { word: "parsing", x: 310, y: 90, cluster: "nlp" },
+          { word: "encoding", x: 340, y: 160, cluster: "nlp" },
+          { word: "vocabulary", x: 270, y: 170, cluster: "nlp" },
+          { word: "subword", x: 360, y: 120, cluster: "nlp" },
+          // Common suffixes cluster
+          { word: "ization", x: 320, y: 140, cluster: "suffixes" },
+          { word: "tion", x: 350, y: 180, cluster: "suffixes" },
+          { word: "ing", x: 240, y: 290, cluster: "suffixes" },
+          { word: "ment", x: 380, y: 200, cluster: "suffixes" },
+          // Near fascinating - positive adjectives
+          { word: "interesting", x: 150, y: 230, cluster: "adjectives" },
+          { word: "amazing", x: 140, y: 280, cluster: "adjectives" },
+          { word: "exciting", x: 200, y: 220, cluster: "adjectives" },
+          { word: "wonderful", x: 120, y: 260, cluster: "adjectives" },
+          // Function words
+          { word: "are", x: 420, y: 320, cluster: "function" },
+          { word: "was", x: 380, y: 280, cluster: "function" },
+        ],
+        clusters: {
+          nlp: { color: "#38bdf8", label: "NLP Concepts" },
+          suffixes: { color: "#a78bfa", label: "Common Suffixes" },
+          adjectives: { color: "#4ade80", label: "Positive Adjectives" },
+          function: { color: "#94a3b8", label: "Function Words" },
+        },
+        insight: "Subword pieces like 'ization' and 'ating' have their own positions! The model learns that '-ization' often follows technical terms and '-ating/-ing' follows action roots."
+      }
+    },
+    {
+      id: 2,
+      text: "ChatGPT uses transformers",
+      tokens: ["Chat", "G", "PT", " uses", " transform", "ers"],
+      ids: [30729, 38, 11571, 3544, 6121, 364],
+      note: "Brand names and technical terms get split unpredictably",
+      embeddingData: {
+        sentenceWords: [
+          { word: "Chat", x: 200, y: 130, isFromSentence: true },
+          { word: "G", x: 240, y: 110, isFromSentence: true },
+          { word: "PT", x: 220, y: 90, isFromSentence: true },
+          { word: "uses", x: 400, y: 250, isFromSentence: true },
+          { word: "transform", x: 350, y: 150, isFromSentence: true },
+          { word: "ers", x: 380, y: 170, isFromSentence: true },
+        ],
+        relatedWords: [
+          // AI/ML terms near transform
+          { word: "attention", x: 320, y: 120, cluster: "ml" },
+          { word: "neural", x: 380, y: 130, cluster: "ml" },
+          { word: "network", x: 410, y: 150, cluster: "ml" },
+          { word: "model", x: 340, y: 180, cluster: "ml" },
+          { word: "encoder", x: 300, y: 160, cluster: "ml" },
+          { word: "decoder", x: 330, y: 200, cluster: "ml" },
+          // Chat-related terms
+          { word: "conversation", x: 170, y: 160, cluster: "chat" },
+          { word: "message", x: 150, y: 120, cluster: "chat" },
+          { word: "bot", x: 230, y: 150, cluster: "chat" },
+          { word: "assistant", x: 180, y: 100, cluster: "chat" },
+          // Other AI products (single letters/abbreviations cluster)
+          { word: "AI", x: 260, y: 80, cluster: "abbrev" },
+          { word: "ML", x: 280, y: 60, cluster: "abbrev" },
+          { word: "NLP", x: 300, y: 90, cluster: "abbrev" },
+          // Verb cluster
+          { word: "utilizes", x: 420, y: 230, cluster: "verbs" },
+          { word: "employs", x: 380, y: 270, cluster: "verbs" },
+          { word: "requires", x: 440, y: 260, cluster: "verbs" },
+        ],
+        clusters: {
+          ml: { color: "#f472b6", label: "ML Architecture" },
+          chat: { color: "#38bdf8", label: "Conversation" },
+          abbrev: { color: "#facc15", label: "Tech Abbreviations" },
+          verbs: { color: "#4ade80", label: "Action Verbs" },
+        },
+        insight: "Brand names like 'ChatGPT' get split into common pieces. 'Chat' lands near conversation terms, while 'transform' lands near ML architecture concepts — the model captures both meanings!"
+      }
+    },
+    {
+      id: 3,
+      text: "I love café and naïve",
+      tokens: ["I", " love", " caf", "é", " and", " na", "ï", "ve"],
+      ids: [40, 1842, 24789, 2634, 290, 12385, 3589, 303],
+      note: "Special characters often become separate tokens",
+      embeddingData: {
+        sentenceWords: [
+          { word: "I", x: 150, y: 280, isFromSentence: true },
+          { word: "love", x: 200, y: 150, isFromSentence: true },
+          { word: "caf", x: 400, y: 120, isFromSentence: true },
+          { word: "é", x: 440, y: 100, isFromSentence: true },
+          { word: "and", x: 170, y: 320, isFromSentence: true },
+          { word: "na", x: 300, y: 200, isFromSentence: true },
+          { word: "ï", x: 330, y: 180, isFromSentence: true },
+          { word: "ve", x: 320, y: 220, isFromSentence: true },
+        ],
+        relatedWords: [
+          // Near love - emotions
+          { word: "adore", x: 180, y: 130, cluster: "emotions" },
+          { word: "like", x: 230, y: 170, cluster: "emotions" },
+          { word: "enjoy", x: 220, y: 120, cluster: "emotions" },
+          { word: "hate", x: 250, y: 190, cluster: "emotions" },
+          { word: "passion", x: 160, y: 170, cluster: "emotions" },
+          // Near café - food/drink
+          { word: "coffee", x: 380, y: 150, cluster: "food" },
+          { word: "restaurant", x: 420, y: 160, cluster: "food" },
+          { word: "bistro", x: 450, y: 130, cluster: "food" },
+          { word: "espresso", x: 360, y: 100, cluster: "food" },
+          // French loanwords
+          { word: "résumé", x: 470, y: 80, cluster: "french" },
+          { word: "fiancé", x: 430, y: 70, cluster: "french" },
+          { word: "cliché", x: 480, y: 110, cluster: "french" },
+          // Near naïve - personality
+          { word: "innocent", x: 280, y: 230, cluster: "personality" },
+          { word: "simple", x: 350, y: 240, cluster: "personality" },
+          { word: "trusting", x: 290, y: 260, cluster: "personality" },
+          // Function words
+          { word: "or", x: 190, y: 340, cluster: "function" },
+          { word: "but", x: 150, y: 300, cluster: "function" },
+        ],
+        clusters: {
+          emotions: { color: "#f472b6", label: "Emotions" },
+          food: { color: "#fb923c", label: "Food & Drink" },
+          french: { color: "#c084fc", label: "French Loanwords" },
+          personality: { color: "#4ade80", label: "Personality Traits" },
+          function: { color: "#94a3b8", label: "Function Words" },
+        },
+        insight: "Special characters like 'é' and 'ï' become separate tokens. 'caf' + 'é' together reconstruct 'café', which clusters near coffee/restaurant terms. French loanwords with accents cluster together!"
+      }
+    },
+    {
+      id: 4,
+      text: "$$$ expensive !!!",
+      tokens: ["$$$", " expensive", " !!!"],
+      ids: [13702, 5765, 27708],
+      note: "Repeated symbols may combine into single tokens",
+      embeddingData: {
+        sentenceWords: [
+          { word: "$$$", x: 250, y: 120, isFromSentence: true },
+          { word: "expensive", x: 350, y: 150, isFromSentence: true },
+          { word: "!!!", x: 200, y: 250, isFromSentence: true },
+        ],
+        relatedWords: [
+          // Money symbols cluster
+          { word: "$", x: 220, y: 100, cluster: "money" },
+          { word: "€", x: 280, y: 90, cluster: "money" },
+          { word: "£", x: 240, y: 140, cluster: "money" },
+          { word: "$$", x: 260, y: 130, cluster: "money" },
+          // Price/cost words
+          { word: "costly", x: 380, y: 130, cluster: "cost" },
+          { word: "pricey", x: 320, y: 170, cluster: "cost" },
+          { word: "cheap", x: 400, y: 190, cluster: "cost" },
+          { word: "affordable", x: 420, y: 160, cluster: "cost" },
+          { word: "luxury", x: 300, y: 120, cluster: "cost" },
+          { word: "premium", x: 340, y: 100, cluster: "cost" },
+          // Emphasis/punctuation cluster
+          { word: "!", x: 180, y: 230, cluster: "emphasis" },
+          { word: "!!", x: 190, y: 270, cluster: "emphasis" },
+          { word: "?", x: 220, y: 290, cluster: "emphasis" },
+          { word: "...", x: 160, y: 260, cluster: "emphasis" },
+          // Intensity words
+          { word: "very", x: 280, y: 220, cluster: "intensity" },
+          { word: "extremely", x: 300, y: 250, cluster: "intensity" },
+          { word: "incredibly", x: 260, y: 280, cluster: "intensity" },
+          { word: "super", x: 240, y: 240, cluster: "intensity" },
+        ],
+        clusters: {
+          money: { color: "#4ade80", label: "Currency Symbols" },
+          cost: { color: "#facc15", label: "Price/Cost Words" },
+          emphasis: { color: "#f472b6", label: "Punctuation" },
+          intensity: { color: "#fb923c", label: "Intensity Words" },
+        },
+        insight: "Symbol sequences like '$$$' and '!!!' get their own tokens! '$$$' clusters with money concepts, while '!!!' is near other emphasis markers. The model learns that more $'s = more expensive, more !'s = more emphasis!"
+      }
+    }
+  ];
+
+  const currentExample = examples[selectedExample];
+
+  // Calculate distances between words
+  const calculateDistance = (w1, w2) => {
+    return Math.sqrt(Math.pow(w1.x - w2.x, 2) + Math.pow(w1.y - w2.y, 2));
+  };
+
+  // Get all words for current example
+  const getAllWords = () => {
+    const data = currentExample.embeddingData;
+    const sentenceWords = data.sentenceWords.map(w => ({
+      ...w,
+      cluster: 'sentence',
+      color: '#ffffff'
+    }));
+    const relatedWords = data.relatedWords.map(w => ({
+      ...w,
+      color: data.clusters[w.cluster]?.color || '#94a3b8'
+    }));
+    return [...sentenceWords, ...relatedWords];
+  };
+
+  // Get connections for hovered word
+  const getConnections = () => {
+    if (!hoveredWord) return [];
+    const allWords = getAllWords();
+    const sourceWord = allWords.find(w => w.word === hoveredWord);
+    if (!sourceWord) return [];
+
+    return allWords
+      .filter(w => w.word !== hoveredWord)
+      .map(w => ({
+        target: w,
+        distance: calculateDistance(sourceWord, w)
+      }))
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 5);
+  };
+
+  const renderTokenization = () => {
+    return (
+      <div className="space-y-6">
+        {/* Example selector */}
+        <div className="bg-slate-800 rounded-xl p-6">
+          <div className="text-slate-400 text-sm mb-3">Select an example to see how it gets tokenized:</div>
+          <div className="flex flex-wrap gap-2">
+            {examples.map((ex, i) => (
+              <button
+                key={i}
+                onClick={() => setSelectedExample(i)}
+                className={`px-3 py-2 rounded-lg text-sm font-mono transition-all ${
+                  selectedExample === i
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                "{ex.text.substring(0, 20)}{ex.text.length > 20 ? '...' : ''}"
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Tokenization visualization */}
+        <div className="bg-slate-800 rounded-xl p-6">
+          <div className="text-center mb-6">
+            <div className="text-slate-400 text-sm mb-2">Original Text</div>
+            <div className="text-2xl text-white font-mono bg-slate-900 rounded-lg px-4 py-3 inline-block">
+              "{currentExample.text}"
+            </div>
+          </div>
+
+          {/* Arrow */}
+          <div className="flex justify-center my-4">
+            <div className="flex flex-col items-center">
+              <div className="text-slate-500 text-xs mb-1">TOKENIZER</div>
+              <svg width="40" height="40" className="text-blue-400">
+                <path d="M20 5 L20 30 M12 22 L20 30 L28 22" stroke="currentColor" strokeWidth="2" fill="none"/>
+              </svg>
+            </div>
+          </div>
+
+          {/* Tokens */}
+          <div className="text-center mb-4">
+            <div className="text-slate-400 text-sm mb-3">Tokens (pieces the model sees)</div>
+            <div className="flex flex-wrap justify-center gap-1">
+              {currentExample.tokens.map((token, i) => (
+                <div key={i} className="group relative">
+                  <div 
+                    className="bg-gradient-to-b from-blue-500 to-blue-600 text-white px-3 py-2 rounded-lg font-mono text-lg shadow-lg transform transition-all hover:scale-110 hover:-translate-y-1"
+                  >
+                    <span className="opacity-50">"</span>
+                    {token.replace(/ /g, '␣')}
+                    <span className="opacity-50">"</span>
+                  </div>
+                  <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                    ID: {currentExample.ids[i]}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Arrow */}
+          <div className="flex justify-center my-6">
+            <svg width="40" height="40" className="text-emerald-400">
+              <path d="M20 5 L20 30 M12 22 L20 30 L28 22" stroke="currentColor" strokeWidth="2" fill="none"/>
+            </svg>
+          </div>
+
+          {/* Token IDs */}
+          <div className="text-center">
+            <div className="text-slate-400 text-sm mb-3">Token IDs (numbers in the model)</div>
+            <div className="flex flex-wrap justify-center gap-2">
+              {currentExample.ids.map((id, i) => (
+                <div
+                  key={i}
+                  className="bg-slate-700 text-emerald-400 px-3 py-2 rounded font-mono text-lg border border-emerald-500/30"
+                >
+                  {id}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Note */}
+          <div className="mt-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+            <div className="text-amber-400 text-sm">
+              💡 {currentExample.note}
+            </div>
+          </div>
+        </div>
+
+        {/* CTA to embedding space */}
+        <div className="bg-gradient-to-r from-purple-900/40 to-blue-900/40 border border-purple-500/30 rounded-xl p-6 text-center">
+          <div className="text-white font-semibold mb-2">Ready to see where these tokens live in meaning space?</div>
+          <button
+            onClick={() => setActiveTab('embedding')}
+            className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-3 rounded-lg font-semibold transition-all"
+          >
+            View in Embedding Space →
+          </button>
+        </div>
+
+        {/* Key insights */}
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="bg-slate-800 rounded-xl p-5">
+            <div className="text-blue-400 font-semibold mb-2">📝 Why Subword Tokenization?</div>
+            <div className="text-slate-300 text-sm space-y-2">
+              <p>Models can't store every possible word. Instead, they learn ~50,000 common pieces.</p>
+              <p>Rare words get split into known pieces the model understands.</p>
+            </div>
+          </div>
+          <div className="bg-slate-800 rounded-xl p-5">
+            <div className="text-purple-400 font-semibold mb-2">🔢 The Vocabulary</div>
+            <div className="text-slate-300 text-sm space-y-2">
+              <p>Each token maps to a unique ID (like a dictionary page number).</p>
+              <p>GPT-4 has ~100,000 tokens in its vocabulary.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderEmbeddingSpace = () => {
+    const allWords = getAllWords();
+    const connections = getConnections();
+    const sourceWord = allWords.find(w => w.word === hoveredWord);
+    const data = currentExample.embeddingData;
+
+    return (
+      <div className="space-y-6">
+        {/* Current example indicator */}
+        <div className="bg-slate-800 rounded-xl p-4">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <div className="text-slate-400 text-sm">Showing embedding space for:</div>
+              <div className="text-white font-mono text-lg">"{currentExample.text}"</div>
+            </div>
+            <button
+              onClick={() => setActiveTab('tokenization')}
+              className="text-blue-400 hover:text-blue-300 text-sm flex items-center gap-1"
+            >
+              ← Change example
+            </button>
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div className="bg-slate-800 rounded-xl p-4">
+          <div className="text-slate-400 text-sm mb-3">Word clusters in this space:</div>
+          <div className="flex flex-wrap gap-3">
+            <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-1.5">
+              <div className="w-4 h-4 rounded-full bg-white border-2 border-white shadow-lg shadow-white/30"></div>
+              <span className="text-white text-sm font-medium">Words from your sentence</span>
+            </div>
+            {Object.entries(data.clusters).map(([id, cluster]) => (
+              <div key={id} className="flex items-center gap-2 bg-slate-700/50 rounded-lg px-3 py-1.5">
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cluster.color }}></div>
+                <span className="text-slate-300 text-sm">{cluster.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Main embedding visualization */}
+        <div className="bg-slate-800 rounded-xl p-4">
+          <div className="relative bg-slate-900 rounded-xl h-96 overflow-hidden">
+            {/* Background grid */}
+            <svg className="absolute inset-0 w-full h-full opacity-10">
+              {[...Array(20)].map((_, i) => (
+                <g key={i}>
+                  <line x1={i * 40} y1="0" x2={i * 40} y2="100%" stroke="#475569" strokeWidth="1"/>
+                  <line x1="0" y1={i * 25} x2="100%" y2={i * 25} stroke="#475569" strokeWidth="1"/>
+                </g>
+              ))}
+            </svg>
+
+            {/* Cluster background blobs */}
+            {Object.entries(data.clusters).map(([id, cluster]) => {
+              const clusterWords = data.relatedWords.filter(w => w.cluster === id);
+              if (clusterWords.length === 0) return null;
+              const centerX = clusterWords.reduce((sum, w) => sum + w.x, 0) / clusterWords.length;
+              const centerY = clusterWords.reduce((sum, w) => sum + w.y, 0) / clusterWords.length;
+              return (
+                <div
+                  key={id}
+                  className="absolute rounded-full blur-3xl opacity-15 transition-all duration-500"
+                  style={{
+                    left: centerX - 80,
+                    top: centerY - 80,
+                    width: 160,
+                    height: 160,
+                    backgroundColor: cluster.color
+                  }}
+                />
+              );
+            })}
+
+            {/* Connection lines for hovered word */}
+            {showConnections && sourceWord && (
+              <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 5 }}>
+                {connections.map((conn, i) => {
+                  const opacity = 1 - (i * 0.15);
+                  const pulse = Math.sin(animationFrame * 0.1 + i) * 0.1 + 0.9;
+                  return (
+                    <g key={conn.target.word}>
+                      <line
+                        x1={sourceWord.x}
+                        y1={sourceWord.y}
+                        x2={conn.target.x}
+                        y2={conn.target.y}
+                        stroke={sourceWord.isFromSentence ? '#ffffff' : sourceWord.color}
+                        strokeWidth={3 - i * 0.4}
+                        strokeOpacity={opacity * pulse}
+                        strokeDasharray={i > 2 ? "5,5" : "none"}
+                      />
+                      <text
+                        x={(sourceWord.x + conn.target.x) / 2}
+                        y={(sourceWord.y + conn.target.y) / 2 - 8}
+                        fill="#94a3b8"
+                        fontSize="10"
+                        textAnchor="middle"
+                      >
+                        {conn.distance.toFixed(0)}
+                      </text>
+                    </g>
+                  );
+                })}
+              </svg>
+            )}
+
+            {/* Words as points */}
+            {allWords.map((wordData, i) => {
+              const isHovered = hoveredWord === wordData.word;
+              const isConnected = connections.some(c => c.target.word === wordData.word);
+              const connectionRank = connections.findIndex(c => c.target.word === wordData.word);
+              const isFromSentence = wordData.isFromSentence;
+
+              return (
+                <div
+                  key={`${wordData.word}-${i}`}
+                  className="absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-300 cursor-pointer"
+                  style={{
+                    left: wordData.x,
+                    top: wordData.y,
+                    zIndex: isHovered ? 30 : isFromSentence ? 25 : isConnected ? 20 : 10
+                  }}
+                  onMouseEnter={() => setHoveredWord(wordData.word)}
+                  onMouseLeave={() => setHoveredWord(null)}
+                >
+                  {/* Glow effect */}
+                  {(isHovered || isConnected || isFromSentence) && (
+                    <div 
+                      className="absolute inset-0 rounded-full blur-md -z-10"
+                      style={{ 
+                        backgroundColor: isFromSentence ? '#ffffff' : wordData.color,
+                        opacity: isHovered ? 0.7 : isFromSentence ? 0.4 : 0.3,
+                        transform: `scale(${isHovered ? 2.5 : isFromSentence ? 2 : 1.5})`
+                      }}
+                    />
+                  )}
+
+                  {/* Word bubble */}
+                  <div
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                      isHovered ? 'scale-125 shadow-xl' : isConnected ? 'scale-110' : ''
+                    }`}
+                    style={{
+                      backgroundColor: isHovered 
+                        ? (isFromSentence ? '#ffffff' : wordData.color)
+                        : isFromSentence 
+                          ? 'rgba(255,255,255,0.9)' 
+                          : `${wordData.color}30`,
+                      color: isHovered || isFromSentence ? '#1e293b' : wordData.color,
+                      border: `2px solid ${isFromSentence ? '#ffffff' : wordData.color}`,
+                      fontWeight: isFromSentence ? 'bold' : 'medium',
+                    }}
+                  >
+                    {wordData.word}
+                  </div>
+
+                  {/* Similarity rank badge */}
+                  {isConnected && connectionRank >= 0 && (
+                    <div 
+                      className="absolute -top-2 -right-2 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
+                      style={{ 
+                        backgroundColor: sourceWord?.isFromSentence ? '#ffffff' : sourceWord?.color, 
+                        color: '#1e293b' 
+                      }}
+                    >
+                      {connectionRank + 1}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Dimension reminder */}
+            <div className="absolute bottom-3 right-3 text-xs text-slate-500 bg-slate-800/80 px-2 py-1 rounded">
+              Showing 2D projection of 512+ dimensions
+            </div>
+          </div>
+
+          {/* Controls */}
+          <div className="flex items-center justify-between mt-4 flex-wrap gap-2">
+            <label className="flex items-center gap-2 text-sm text-slate-400">
+              <input
+                type="checkbox"
+                checked={showConnections}
+                onChange={(e) => setShowConnections(e.target.checked)}
+                className="rounded"
+              />
+              Show similarity connections on hover
+            </label>
+            <div className="text-slate-500 text-sm">
+              Hover over any word to see its nearest neighbors
+            </div>
+          </div>
+        </div>
+
+        {/* Hovered word info panel */}
+        {hoveredWord && sourceWord && (
+          <div 
+            className="bg-slate-800 rounded-xl p-5 border-l-4 transition-all"
+            style={{ borderColor: sourceWord.isFromSentence ? '#ffffff' : sourceWord.color }}
+          >
+            <div className="flex items-center gap-3 mb-3 flex-wrap">
+              <div 
+                className="text-2xl font-bold"
+                style={{ color: sourceWord.isFromSentence ? '#ffffff' : sourceWord.color }}
+              >
+                "{hoveredWord}"
+              </div>
+              {sourceWord.isFromSentence && (
+                <span className="bg-white/20 text-white text-xs px-2 py-1 rounded">From your sentence</span>
+              )}
+            </div>
+            <div className="text-slate-400 text-sm mb-2">5 most similar words (by proximity):</div>
+            <div className="flex flex-wrap gap-2">
+              {connections.map((conn, i) => (
+                <div 
+                  key={conn.target.word}
+                  className="flex items-center gap-2 bg-slate-700/50 rounded-lg px-3 py-1.5"
+                >
+                  <span 
+                    className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
+                    style={{ backgroundColor: sourceWord.isFromSentence ? '#ffffff' : sourceWord.color, color: '#1e293b' }}
+                  >
+                    {i + 1}
+                  </span>
+                  <span style={{ color: conn.target.isFromSentence ? '#ffffff' : conn.target.color }}>
+                    {conn.target.word}
+                  </span>
+                  <span className="text-xs text-slate-500">({conn.distance.toFixed(0)} units)</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Insight for this example */}
+        <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 border border-purple-500/30 rounded-xl p-5">
+          <div className="text-purple-400 font-semibold mb-2">🔍 What to notice</div>
+          <div className="text-slate-300">
+            {currentExample.embeddingData.insight}
+          </div>
+        </div>
+
+        {/* Key concepts */}
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="bg-slate-800 rounded-xl p-5">
+            <div className="text-pink-400 font-semibold mb-2">🎯 Proximity = Similarity</div>
+            <div className="text-slate-300 text-sm space-y-2">
+              <p>Words that appear in similar contexts during training end up near each other.</p>
+              <p>The white words from your sentence cluster with semantically related concepts.</p>
+            </div>
+          </div>
+          <div className="bg-slate-800 rounded-xl p-5">
+            <div className="text-cyan-400 font-semibold mb-2">📐 High Dimensions</div>
+            <div className="text-slate-300 text-sm space-y-2">
+              <p>Real embeddings have 512-4096 dimensions, capturing nuanced relationships.</p>
+              <p>This 2D view is a simplified projection — imagine many more axes!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
+      <div className="max-w-5xl mx-auto">
+        <h1 className="text-3xl font-bold text-white text-center mb-2">
+          From Words to Meaning Space
+        </h1>
+        <p className="text-slate-400 text-center mb-6">
+          How language models represent words as points in a high-dimensional cloud
+        </p>
+
+        {/* Tab navigation */}
+        <div className="flex justify-center gap-4 mb-8">
+          <button
+            onClick={() => setActiveTab('tokenization')}
+            className={`px-6 py-3 rounded-xl font-semibold transition-all ${
+              activeTab === 'tokenization'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+            }`}
+          >
+            1. Tokenization
+            <div className="text-xs opacity-70 mt-1">Breaking text into pieces</div>
+          </button>
+          <button
+            onClick={() => setActiveTab('embedding')}
+            className={`px-6 py-3 rounded-xl font-semibold transition-all ${
+              activeTab === 'embedding'
+                ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30'
+                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+            }`}
+          >
+            2. Embedding Space
+            <div className="text-xs opacity-70 mt-1">Words as points in meaning space</div>
+          </button>
+        </div>
+
+        {/* Content */}
+        {activeTab === 'tokenization' && renderTokenization()}
+        {activeTab === 'embedding' && renderEmbeddingSpace()}
+
+        {/* Process connection */}
+        <div className="mt-8 bg-gradient-to-r from-blue-900/30 to-purple-900/30 border border-blue-500/30 rounded-xl p-6">
+          <h3 className="text-white font-bold text-lg mb-4">🔗 The Complete Pipeline</h3>
+          <div className="flex items-center justify-center gap-2 flex-wrap">
+            <div className="bg-slate-800 rounded-lg px-4 py-3 text-center">
+              <div className="text-blue-400 font-mono text-sm">"{currentExample.text.substring(0, 15)}..."</div>
+              <div className="text-slate-500 text-xs">Raw text</div>
+            </div>
+            <svg width="30" height="20" className="text-slate-500 flex-shrink-0">
+              <path d="M5 10 L25 10 M20 5 L25 10 L20 15" stroke="currentColor" strokeWidth="2" fill="none"/>
+            </svg>
+            <div className="bg-slate-800 rounded-lg px-4 py-3 text-center">
+              <div className="text-emerald-400 font-mono text-sm">{currentExample.tokens.length} tokens</div>
+              <div className="text-slate-500 text-xs">Tokenized</div>
+            </div>
+            <svg width="30" height="20" className="text-slate-500 flex-shrink-0">
+              <path d="M5 10 L25 10 M20 5 L25 10 L20 15" stroke="currentColor" strokeWidth="2" fill="none"/>
+            </svg>
+            <div className="bg-slate-800 rounded-lg px-4 py-3 text-center">
+              <div className="text-amber-400 font-mono text-sm">[{currentExample.ids[0]}, ...]</div>
+              <div className="text-slate-500 text-xs">Token IDs</div>
+            </div>
+            <svg width="30" height="20" className="text-slate-500 flex-shrink-0">
+              <path d="M5 10 L25 10 M20 5 L25 10 L20 15" stroke="currentColor" strokeWidth="2" fill="none"/>
+            </svg>
+            <div className="bg-slate-800 rounded-lg px-4 py-3 text-center">
+              <div className="text-purple-400 font-mono text-sm">{currentExample.tokens.length} × 512</div>
+              <div className="text-slate-500 text-xs">Embedding matrix</div>
+            </div>
+            <svg width="30" height="20" className="text-slate-500 flex-shrink-0">
+              <path d="M5 10 L25 10 M20 5 L25 10 L20 15" stroke="currentColor" strokeWidth="2" fill="none"/>
+            </svg>
+            <div className="bg-slate-800 rounded-lg px-4 py-3 text-center">
+              <div className="text-pink-400">📍 × {currentExample.tokens.length}</div>
+              <div className="text-slate-500 text-xs">Points in space</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById('root')).render(<TokenizationAndEmbeddingViz />);
+    </script>
+</body>
+</html>
