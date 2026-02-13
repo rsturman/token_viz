@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Visualizations</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            padding: 2rem;
+        }
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 2rem;
+        }
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            max-width: 900px;
+        }
+        .card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            text-decoration: none;
+            color: inherit;
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+        .card:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.14);
+            transform: translateY(-2px);
+        }
+        .card h2 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+        .card p {
+            color: #555;
+            line-height: 1.5;
+            font-size: 0.95rem;
+        }
+        .tag {
+            display: inline-block;
+            background: #e8f0fe;
+            color: #1a73e8;
+            font-size: 0.75rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            margin-top: 0.75rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>Class Visualizations</h1>
+    <p class="subtitle">Interactive visual guides for key AI and NLP concepts.</p>
+
+    <div class="cards">
+        <a class="card" href="token-viz.html">
+            <h2>Tokenization &amp; Embedding Spaces</h2>
+            <p>Explore how text is broken into sub-word tokens and mapped to numerical IDs, then see how words are positioned in a 2D embedding space where semantically related words cluster together.</p>
+            <span class="tag">HTML &middot; Interactive</span>
+        </a>
+
+        <a class="card" href="rag-agentic-viz.jsx">
+            <h2>RAG &amp; Agentic AI Architecture</h2>
+            <p>Walk through the Retrieval-Augmented Generation pipeline, an agentic reasoning loop with planning, tool use, and memory, and the key design trade-offs when building production AI systems.</p>
+            <span class="tag">React &middot; Interactive</span>
+        </a>
+    </div>
+</body>
+</html>
